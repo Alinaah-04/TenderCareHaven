@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Need Request</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            background-image: url(./images/bg5.jpeg);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background: #c7c6c4;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .form-section {
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+
+        .item, .contact {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        input[type="text"], input[type="email"] {
+            width: calc(50% - 10px);
+            padding: 10px;
+            margin: 5px 0;
+            box-sizing: border-box;
+        }
+
+        button {
+            display: block;
+            width: 40px;
+            height: 40px;
+            margin: 10px auto;
+            font-size: 24px;
+            background: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .remove {
+            background: #FF0000;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            font-size: 20px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .remove:hover {
+            background: #cc0000;
+        }
+
+        .submitBtn, .backBtn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            font-size: 18px;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .submitBtn {
+            background: #007BFF;
+        }
+
+        .submitBtn:hover {
+            background: #0056b3;
+        }
+
+        .backBtn {
+            background: #6c757d;
+        }
+
+        .backBtn:hover {
+            background: #5a6268;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Need Request</h1>
+        <form id="requestForm">
+            <div class="form-section">
+                <h2>Items</h2>
+                <div id="items">
+                    <div class="item">
+                        <input type="text" name="items[]" placeholder="Enter item">
+                        <input type="text" name="quantity[]" placeholder="Enter quantity">
+                        <button type="button" class="remove">&times;</button>
+                    </div>
+                </div>
+                <button type="button" id="addItem">+</button>
+            </div>
+            <div class="form-section">
+                <h2>Contact Details</h2>
+                <div id="contacts">
+                    <div class="contact">
+                        <input type="text" name="contact_number" placeholder="Enter contact number" pattern="\d{10}" required>
+                        <input type="email" name="contact_emails" placeholder="Enter email" required>
+                    </div>
+                </div>
+            </div>
+            <button type="submit" class="submitBtn">Submit Request</button>
+            <button type="button" class="backBtn" onclick="history.back()">Back</button>
+        </form>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            document.getElementById("addItem").addEventListener("click", function() {
+                addItem();
+            });
+
+            document.getElementById("items").addEventListener("click", function(event) {
+                if (event.target.classList.contains("remove")) {
+                    event.target.parentElement.remove();
+                }
+            });
+
+            function addItem() {
+                const itemsDiv = document.getElementById("items");
+                const newItemDiv = document.createElement("div");
+                newItemDiv.classList.add("item");
+                newItemDiv.innerHTML = '<input type="text" name="items[]" placeholder="Enter item"> <input type="text" name="quantity[]" placeholder="Enter quantity"><button type="button" class="remove">&times;</button>';
+                itemsDiv.appendChild(newItemDiv);
+            }
+
+            document.getElementById("requestForm").addEventListener("submit", function(event) {
+                event.preventDefault();
+                const formData = new FormData(this);
+                const items = formData.getAll('items[]');
+                const quantities = formData.getAll('quantity[]');
+                const contactNumbers = formData.getAll('contact_number');
+                const contactEmails = formData.getAll('contact_emails');
+
+                const requestData = {
+                    userId: JSON.parse(localStorage.getItem('user')).UserId,  // Assuming userId is stored in localStorage
+                    items: items.map((item, index) => ({
+                        item,
+                        quantity: quantities[index],
+                        number:contactNumbers[0],
+                        email: contactEmails[0]
+                    })),
+           
+                };
+
+                console.log(requestData);
+                alert("Request submitted successfully!");
+
+                // You can replace the console.log with your code to send the data to the server
+                axios.post('http://localhost:3000/addNeedRequest', requestData)
+                    .then(response => {
+                        console.log('Request submitted:', response.data);
+                        window.location.href = "needrequest.html"
+                    })
+                    .catch(error => {
+                        console.error('Error submitting request:', error);
+                    });
+            });
+
+            document.getElementById("contacts").addEventListener("input", function(event) {
+                if (event.target.name === "contact_number[]") {
+                    const value = event.target.value;
+                    if (!/^\d{0,10}$/.test(value)) {
+                        event.target.setCustomValidity("Please enter a valid 10-digit number.");
+                    } else {
+                        event.target.setCustomValidity("");
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

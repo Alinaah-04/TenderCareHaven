@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Products</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+            background-image: url(./images/bg5.jpeg);
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .table-container {
+            margin-top: 20px;
+        }
+        .logo {
+            width: 8%;
+            height: 8%;
+            position: relative;
+            border: 50%;
+        }
+        .navbar-brand {
+            font-weight: bold;
+        }
+        .bg-body-tertiary {
+            background-color: rgba(218, 226, 233, 0.295);
+        }
+        .nav-link {
+            color: black;
+            font-weight: bold;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const userId = JSON.parse(localStorage.getItem('user')).UserId;
+            
+            if (!userId) {
+                alert('User not logged in');
+                return;
+            }
+
+            // Fetch products
+            function fetchProducts() {
+                axios.get(`http://localhost:3000/getProducts?userId=${userId}`)
+                    .then(response => {
+                        const products = response.data;
+                        const tableBody = document.querySelector('#productsTable tbody');
+                        tableBody.innerHTML = '';
+
+                        products.forEach(product => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${product.name}</td>
+                                <td>${product.price}</td>
+                                <td>${product.description}</td>
+                                <td>${product.quantity}</td>
+                              
+                                <td>
+                                    <button class="btn btn-primary edit-button" data-id="${product._id}">Edit</button>
+                                    <button class="btn btn-danger delete-button" data-id="${product._id}">Delete</button>
+                                </td>
+                            `;
+                            tableBody.appendChild(row);
+                        });
+
+                        attachEventListeners();
+                    })
+                    .catch(error => {
+                        console.error('Error fetching products:', error);
+                    });
+            }
+
+            function attachEventListeners() {
+                document.querySelectorAll('.edit-button').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const productId = this.getAttribute('data-id');
+                        editProduct(productId);
+                    });
+                });
+
+                document.querySelectorAll('.delete-button').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const productId = this.getAttribute('data-id');
+                        deleteProduct(productId);
+                    });
+                });
+            }
+
+            function editProduct(productId) {
+                axios.get(`http://localhost:3000/getProduct/${productId}`)
+                    .then(response => {
+                        const product = response.data;
+                        document.getElementById('editProductId').value = product._id;
+                        document.getElementById('editProductName').value = product.name;
+                        document.getElementById('editPrice').value = product.price;
+                        document.getElementById('editDescription').value = product.description;
+                        document.getElementById('editQuantity').value = product.quantity;
+                        // Open the modal
+                        const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+                        editModal.show();
+                    })
+                    .catch(error => {
+                        console.error('Error fetching product:', error);
+                    });
+            }
+
+            function deleteProduct(productId) {
+                axios.delete(`http://localhost:3000/deleteProduct/${productId}`)
+                    .then(response => {
+                        console.log('Product deleted successfully:', response.data);
+                        fetchProducts();
+                    })
+                    .catch(error => {
+                        console.error('Error deleting product:', error);
+                    });
+            }
+
+            document.getElementById('editProductForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                const productId = document.getElementById('editProductId').value;
+                const formData = new FormData(this);
+                formData.append('userId', userId);
+                
+                axios.put(`http://localhost:3000/editProduct/${productId}`, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                })
+                .then(response => {
+                    console.log('Product updated successfully:', response.data);
+                    // Close the modal
+                    const editModal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
+                    editModal.hide();
+                    fetchProducts();
+                })
+                .catch(error => {
+                    console.error('Error updating product:', error);
+                });
+            });
+
+            fetchProducts();
+        });
+        setTimeout(() => {
+            document.getElementById('viewCartButton').addEventListener('click', function() {
+            window.location.href = 'orphproductup.html';
+        });      
+        }, 20);
+    </script>
+</head>
+<body>
+    <nav class="navbar bg-body-tertiary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <img class="logo" src="./images/blackh.jpeg" alt="Logo" width="30" height="24" class="d-inline-block align-text-top">
+                TenderCare Haven
+            </a>
+            <button id="viewCartButton" class="btn btn-primary">Add Craft</button>
+        </div>
+    </nav>
+    <div class="container">
+        <h1>Manage Products</h1>
+        <div class="table-container">
+            <table class="table table-striped" id="productsTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Price</th>
+                        <th>Description</th>
+                        <th>Quantity</th>
+                        <!-- <th>Image</th> -->
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Products will be dynamically added here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editModalLabel">Edit Product</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="editProductForm">
+                    <div class="modal-body">
+                        <input type="hidden" id="editProductId" name="productId">
+                        <div class="mb-3">
+                            <label for="editProductName" class="form-label">Product Name</label>
+                            <input type="text" class="form-control" id="editProductName" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editPrice" class="form-label">Price</label>
+                            <input type="number" class="form-control" id="editPrice" name="price" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editDescription" class="form-label">Product Description</label>
+                            <textarea class="form-control" id="editDescription" name="description" rows="3" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editQuantity" class="form-label">Product Quantity</label>
+                            <input type="number" class="form-control" id="editQuantity" name="quantity" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editImage" class="form-label">Upload Image</label>
+                            <input class="form-control" type="file" id="editImage" name="image" accept="image/*">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Save changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"></script>
+</body>
+</html>
